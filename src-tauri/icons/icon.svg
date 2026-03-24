@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- 剪贴板主体 -->
-  <rect x="100" y="120" width="312" height="320" rx="12" fill="#ffffff" stroke="#1e90ff" stroke-width="16"/>
-  <!-- 剪贴板顶部 -->
-  <rect x="120" y="80" width="272" height="40" rx="8" fill="#1e90ff"/>
-  <!-- 剪贴板线条 -->
-  <rect x="140" y="180" width="232" height="4" rx="2" fill="#1e90ff"/>
-  <rect x="140" y="240" width="232" height="4" rx="2" fill="#1e90ff"/>
-  <rect x="140" y="300" width="180" height="4" rx="2" fill="#1e90ff"/>
+  <rect width="512" height="512" fill="#1e1e1e" rx="32" ry="32"/>
+  <path d="M128 128h256v256H128z" fill="#007acc" opacity="0.8"/>
+  <path d="M144 144h224v224H144z" fill="#1e1e1e"/>
+  <text x="50%" y="50%" font-family="'Menlo', 'Monaco', 'Courier New', monospace" font-size="80" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">$</text>
+  <text x="50%" y="65%" font-family="'Menlo', 'Monaco', 'Courier New', monospace" font-size="48" font-weight="bold" fill="#00ff00" text-anchor="middle" dominant-baseline="middle">EchoX</text>
 </svg>
