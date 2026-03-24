@@ -1,0 +1,33 @@
+{
+  "name": "echox",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm run typecheck && pnpm run build:web",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "typecheck": "vue-tsc --noEmit",
+    "build:web": "vite build",
+    "build:desktop": "pnpm run build && pnpm run tauri build",
+    "bundle:dmg": "pnpm run build && pnpm run tauri build --bundles dmg"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.9.6",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vue-tsc": "^3.1.1"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  }
+}
