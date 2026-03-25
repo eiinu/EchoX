@@ -1,10 +1,26 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::{
+    collections::HashMap,
+    env,
+    path::PathBuf,
+    sync::{Mutex, OnceLock},
+};
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, WindowEvent,
 };
+
+static SHELL_CWD: OnceLock<Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
+
+fn shell_cwd_map() -> &'static Mutex<HashMap<String, PathBuf>> {
+    SHELL_CWD.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn escape_for_single_quotes(raw: &str) -> String {
+    raw.replace('\'', "'\"'\"'")
+}
 
 #[tauri::command]
 fn execute_command(command: String, shell: String) -> Result<String, String> {
@@ -24,7 +40,23 @@ fn execute_command(command: String, shell: String) -> Result<String, String> {
         ),
     };
 
-    let wrapped_command = format!("{init_script}\n{trimmed}");
+    let shell_key = shell.trim().to_string();
+    let cwd = {
+        let mut cwd_map = shell_cwd_map()
+            .lock()
+            .map_err(|_| "无法读取终端状态，请重试".to_string())?;
+
+        let entry = cwd_map
+            .entry(shell_key.clone())
+            .or_insert_with(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+        entry.clone()
+    };
+    let cwd_escaped = escape_for_single_quotes(&cwd.to_string_lossy());
+    let marker = "__ECHOX_CWD_MARKER__";
+
+    let wrapped_command = format!(
+        "{init_script}\ncd '{cwd_escaped}' || exit 1\n{trimmed}\nstatus=$?\nprintf '\\n{marker}%s\\n' \"$PWD\"\nexit $status"
+    );
 
     let output = std::process::Command::new(shell_binary)
         .arg("-c")
@@ -32,8 +64,19 @@ fn execute_command(command: String, shell: String) -> Result<String, String> {
         .output()
         .map_err(|err| format!("执行失败: {err}"))?;
 
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let mut stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if let Some(marker_pos) = stdout.rfind(marker) {
+        let cwd_start = marker_pos + marker.len();
+        let new_cwd = stdout[cwd_start..].trim().to_string();
+        stdout.truncate(marker_pos);
+        if !new_cwd.is_empty() {
+            if let Ok(mut cwd_map) = shell_cwd_map().lock() {
+                cwd_map.insert(shell_key, PathBuf::from(new_cwd));
+            }
+        }
+    }
 
     if output.status.success() {
         if stdout.trim().is_empty() && stderr.trim().is_empty() {
