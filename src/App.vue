@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core';
 import { ref, onMounted } from 'vue';
 
 interface TerminalEntry {
@@ -12,23 +13,26 @@ const commandInput = ref('');
 const terminalEntries = ref<TerminalEntry[]>([]);
 let entryId = 0;
 
-const executeCommand = () => {
+const executeCommand = async () => {
   const command = commandInput.value.trim();
   if (!command) return;
 
-  // 添加命令到终端
-  const newEntry: TerminalEntry = {
+  terminalEntries.value.push({
     id: entryId++,
     command,
-    output: `执行命令: ${command}\n这是模拟的命令输出`,
+    output: '执行中...',
     timestamp: new Date().toLocaleTimeString(),
-  };
-  terminalEntries.value.push(newEntry);
-
-  // 清空输入
+  });
   commandInput.value = '';
 
-  // 滚动到底部
+  try {
+    const output = await invoke<string>('execute_command', { command });
+    terminalEntries.value[terminalEntries.value.length - 1].output = output;
+  } catch (error) {
+    terminalEntries.value[terminalEntries.value.length - 1].output =
+      `错误: ${String(error)}`;
+  }
+
   setTimeout(() => {
     const terminal = document.querySelector('.terminal-output');
     if (terminal) {
