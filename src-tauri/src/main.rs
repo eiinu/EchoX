@@ -7,13 +7,18 @@ use tauri::{
 };
 
 #[tauri::command]
-fn execute_command(command: String) -> Result<String, String> {
+fn execute_command(command: String, shell: String) -> Result<String, String> {
     let trimmed = command.trim();
     if trimmed.is_empty() {
         return Err("命令不能为空".to_string());
     }
 
-    let output = std::process::Command::new("sh")
+    let shell_binary = match shell.trim() {
+        "zsh" => "zsh",
+        _ => "bash",
+    };
+
+    let output = std::process::Command::new(shell_binary)
         .arg("-c")
         .arg(trimmed)
         .output()

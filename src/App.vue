@@ -10,6 +10,7 @@ interface TerminalEntry {
 }
 
 const commandInput = ref('');
+const selectedShell = ref<'bash' | 'zsh'>('bash');
 const terminalEntries = ref<TerminalEntry[]>([]);
 let entryId = 0;
 
@@ -26,7 +27,10 @@ const executeCommand = async () => {
   commandInput.value = '';
 
   try {
-    const output = await invoke<string>('execute_command', { command });
+    const output = await invoke<string>('execute_command', {
+      command,
+      shell: selectedShell.value,
+    });
     terminalEntries.value[terminalEntries.value.length - 1].output = output;
   } catch (error) {
     terminalEntries.value[terminalEntries.value.length - 1].output =
@@ -79,6 +83,10 @@ onMounted(() => {
           </div>
         </div>
         <div class="terminal-input">
+          <select v-model="selectedShell" class="shell-selector" aria-label="选择 shell">
+            <option value="bash">bash</option>
+            <option value="zsh">zsh</option>
+          </select>
           <span class="prompt">$</span>
           <input
             v-model="commandInput"
@@ -194,9 +202,19 @@ onMounted(() => {
 .terminal-input {
   display: flex;
   align-items: center;
+  gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid #3e3e42;
   background: #252526;
+}
+.shell-selector {
+  min-width: 92px;
+  border: 1px solid #3e3e42;
+  border-radius: 6px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 4px 8px;
+  outline: none;
 }
 .terminal-input input {
   flex: 1;
