@@ -6,6 +6,39 @@ use tauri::{
     AppHandle, Manager, WindowEvent,
 };
 
+#[tauri::command]
+fn execute_command(command: String) -> Result<String, String> {
+    let trimmed = command.trim();
+    if trimmed.is_empty() {
+        return Err("命令不能为空".to_string());
+    }
+
+    let output = std::process::Command::new("sh")
+        .arg("-c")
+        .arg(trimmed)
+        .output()
+        .map_err(|err| format!("执行失败: {err}"))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() {
+        if stdout.trim().is_empty() && stderr.trim().is_empty() {
+            Ok("(命令执行完成，无输出)".to_string())
+        } else {
+            Ok(format!("{stdout}{stderr}").trim_end().to_string())
+        }
+    } else {
+        let status = output.status.code().unwrap_or(-1);
+        let details = format!("{stdout}{stderr}").trim().to_string();
+        if details.is_empty() {
+            Err(format!("命令执行失败，退出码: {status}"))
+        } else {
+            Err(format!("命令执行失败，退出码: {status}\n{details}"))
+        }
+    }
+}
+
 fn build_tray(app: &AppHandle) -> Result<(), tauri::Error> {
     let show = MenuItemBuilder::with_id("show", "显示主窗口").build(app)?;
     let quit = MenuItemBuilder::with_id("quit", "退出 EchoX").build(app)?;
@@ -69,6 +102,7 @@ fn main() {
 
             Ok(())
         })
+        .invoke_handler(tauri::generate_handler![execute_command])
         .run(tauri::generate_context!())
         .expect("error while running EchoX");
 }
