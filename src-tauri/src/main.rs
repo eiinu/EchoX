@@ -7,15 +7,28 @@ use tauri::{
 };
 
 #[tauri::command]
-fn execute_command(command: String) -> Result<String, String> {
+fn execute_command(command: String, shell: String) -> Result<String, String> {
     let trimmed = command.trim();
     if trimmed.is_empty() {
         return Err("命令不能为空".to_string());
     }
 
-    let output = std::process::Command::new("sh")
+    let (shell_binary, init_script) = match shell.trim() {
+        "zsh" => (
+            "zsh",
+            "if [ -f ~/.zprofile ]; then source ~/.zprofile; fi\nif [ -f ~/.zshrc ]; then source ~/.zshrc; fi",
+        ),
+        _ => (
+            "bash",
+            "if [ -f ~/.bash_profile ]; then source ~/.bash_profile; fi\nif [ -f ~/.bashrc ]; then source ~/.bashrc; fi",
+        ),
+    };
+
+    let wrapped_command = format!("{init_script}\n{trimmed}");
+
+    let output = std::process::Command::new(shell_binary)
         .arg("-c")
-        .arg(trimmed)
+        .arg(wrapped_command)
         .output()
         .map_err(|err| format!("执行失败: {err}"))?;
 
